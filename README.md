@@ -58,7 +58,7 @@ npm run dev
 
 ### 3. Frontend Setup
 
-cd apps/frontend
+cd apps/frontend ;
 npm install
 
 npm run dev
