@@ -7,7 +7,6 @@ export default function LoginPage() {
       <div className="p-8 bg-white shadow-xl rounded-2xl w-96 text-center border border-gray-100">
         <h1 className="text-2xl font-bold mb-2 text-blue-600">purabhReachInbox</h1>
         <p className="text-gray-500 mb-8 text-sm">Sign in to manage your campaigns</p>
-        
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
           className="flex items-center justify-center w-full gap-3 px-4 py-3 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all font-medium shadow-sm"
