@@ -10,10 +10,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: "*", // This allows your Vercel frontend to talk to your Render backend
-  credentials: true
+  origin: "*", // This is the 'Easy Mode' for submissions to ensure it works everywhere
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
-app.use(express.json());
 
 // Routes
 app.use('/api/emails', emailRoutes);

@@ -22,16 +22,34 @@ export default function ComposeModal({ onClose, onRefresh }: any) {
   };
 
   const handleSubmit = async () => {
-    await axios.post("http://localhost:5000/api/emails/schedule", {
-      recipients,
-      subject,
-      body,
-      startTime,
-      delayBetweenEmails: delay,
-      hourlyLimit: limit,
-    });
-    onRefresh();
-    onClose();
+    try {
+      // 1. Validation
+      if (recipients.length === 0) return alert("Please upload a CSV with email addresses first.");
+      if (!subject || !body || !startTime) return alert("Please fill in all fields.");
+
+      // 2. Get the URL from Env or fallback to your Render URL
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://purabhreachinbox.onrender.com/api/emails";
+      
+      console.log("Attempting to send to:", `${baseUrl}/schedule`);
+
+      const response = await axios.post(`${baseUrl}/schedule`, {
+        recipients,
+        subject,
+        body,
+        startTime,
+        delayBetweenEmails: delay,
+        hourlyLimit: limit,
+      });
+
+      if (response.status === 201 || response.status === 200) {
+        alert("Campaign Scheduled Successfully!");
+        onRefresh();
+        onClose();
+      }
+    } catch (error: any) {
+      console.error("Full Error Object:", error);
+      alert(`Error: ${error.response?.data?.error || error.message}`);
+    }
   };
 
   return (
