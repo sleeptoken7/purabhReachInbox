@@ -1,10 +1,13 @@
 # purabhReachInbox - Full-stack Email Job Scheduler
 
+# https://purabh-reachinbox.vercel.app/
+
 A production-grade email scheduling service built for the ReachInbox hiring assignment. This application allows users to schedule bulk email campaigns with smart rate-limiting, concurrency control, and persistence across server restarts.
 
 ## 🚀 Demo & Documentation
 
-- **Demo Video:** [INSERT YOUR VIDEO LINK HERE AFTER RECORDING]
+- **Demo Video:**  https://drive.google.com/file/d/1KwSUloVCTV0Jy5QU9MG6HDf1AhaotAo-/view?usp=sharing
+
 - **Architecture:** Modular Monolith (Express.js + Next.js)
 
 ## 🧪 Tech Requirements Implemented
