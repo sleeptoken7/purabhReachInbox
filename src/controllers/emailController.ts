@@ -8,32 +8,28 @@ export const scheduleEmails = async (req: Request, res: Response) => {
   try {
     const { recipients, subject, body, startTime, delayBetweenEmails, hourlyLimit } = req.body;
     
-    // --- ADD THIS BLOCK TO FIX THE ERROR ---
+    // 1. Ensure a User exists in the new Cloud DB
+    // We use a hardcoded ID for now since we are bypassing full Auth for the API test
     const userId = "temp-user-id";
+    
     await prisma.user.upsert({
-      where: { email: 'test@example.com' },
+      where: { id: userId },
       update: {},
       create: {
         id: userId,
-        email: 'test@example.com',
-        name: 'Test User'
+        email: "admin@purabhreachinbox.com",
+        name: "Admin User"
       }
     });
-    // ---------------------------------------
 
     const startTimestamp = new Date(startTime).getTime();
-    // ... rest of your code ...
-
     const scheduledJobs = [];
 
     for (let i = 0; i < recipients.length; i++) {
       const recipient = recipients[i];
-      
-      // Calculate delay for this specific email
-      // Formula: (Start Time - Now) + (Index * Delay Between Each)
       const individualDelay = (startTimestamp - Date.now()) + (i * delayBetweenEmails * 1000);
       
-      // 1. Save to Database first (Persistence)
+      // 2. Create the Job in Postgres
       const dbJob = await prisma.emailJob.create({
         data: {
           userId,
@@ -42,11 +38,11 @@ export const scheduleEmails = async (req: Request, res: Response) => {
           body,
           status: 'SCHEDULED',
           scheduledAt: new Date(startTimestamp + (i * delayBetweenEmails * 1000)),
-          senderEmail: process.env.SMTP_USER || "",
+          senderEmail: process.env.SMTP_USER || "test@example.com",
         },
       });
 
-      // 2. Add to BullMQ
+      // 3. Add to BullMQ
       await emailQueue.add(
         'send-email',
         {
@@ -54,24 +50,23 @@ export const scheduleEmails = async (req: Request, res: Response) => {
           recipient,
           subject,
           body,
-          hourlyLimit // Pass this to worker for rate limiting
+          hourlyLimit
         },
         { 
-          delay: Math.max(0, individualDelay), // Ensure delay isn't negative
-          jobId: dbJob.id // Use DB ID as BullMQ ID for idempotency
+          delay: Math.max(0, individualDelay),
+          jobId: dbJob.id 
         }
       );
 
       scheduledJobs.push(dbJob);
     }
 
-    res.status(201).json({ message: `${recipients.length} emails scheduled successfully`, jobs: scheduledJobs });
+    res.status(201).json({ message: "Success", jobs: scheduledJobs });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to schedule emails' });
+    console.error("BACKEND ERROR:", error); // This will show in Render logs
+    res.status(500).json({ error: 'Failed to schedule emails', details: (error as Error).message });
   }
 };
-
 export const getJobs = async (req: Request, res: Response) => {
     const jobs = await prisma.emailJob.findMany({
         orderBy: { createdAt: 'desc' }
