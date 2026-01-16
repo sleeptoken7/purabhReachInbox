@@ -1,8 +1,10 @@
 "use client";
-
+import { useState, useEffect } from "react";
+import axios from "axios";
+import Header from "@/components/Header";
+import ComposeModal from "@/components/ComposeModal";
+// ... rest of your code
 import { signIn } from "next-auth/react";
-import Header from "../components/Header";
-import ComposeModal from "../components/ComposeModal";
 
 export default function LoginPage() {
   return (
