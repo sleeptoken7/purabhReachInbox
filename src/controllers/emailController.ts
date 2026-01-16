@@ -63,8 +63,14 @@ export const scheduleEmails = async (req: Request, res: Response) => {
 
     res.status(201).json({ message: "Success", jobs: scheduledJobs });
   } catch (error) {
-    console.error("BACKEND ERROR:", error); // This will show in Render logs
-    res.status(500).json({ error: 'Failed to schedule emails', details: (error as Error).message });
+    // This will print the EXACT error in your Render logs
+    console.error("CRITICAL BACKEND ERROR:", error); 
+    
+    res.status(500).json({ 
+      error: 'Failed to schedule emails', 
+      message: (error as Error).message,
+      stack: (error as Error).stack 
+    });
   }
 };
 export const getJobs = async (req: Request, res: Response) => {
