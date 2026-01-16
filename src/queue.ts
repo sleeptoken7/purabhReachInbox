@@ -11,7 +11,7 @@ export const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://loc
 
 // Create the main email queue
 export const emailQueue = new Queue('email-queue', {
-  connection: redisConnection,
+  connection: redisConnection as any,
   defaultJobOptions: {
     attempts: 3, // Retry 3 times if it fails
     backoff: {

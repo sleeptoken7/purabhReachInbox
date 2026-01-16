@@ -79,7 +79,7 @@ export const emailWorker = new Worker(
     }
   },
   { 
-    connection: redisConnection,
+    connection: redisConnection as any,
     concurrency: 5 // Process 5 emails in parallel
   }
 );
