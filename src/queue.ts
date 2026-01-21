@@ -4,22 +4,14 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const redisUrl = process.env.REDIS_URL;
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 
-if (!redisUrl) {
-  throw new Error("REDIS_URL is not defined in environment variables");
-}
-
-// This configuration is required for Upstash + BullMQ
 export const redisConnection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
-  // Force TLS if using rediss://
   tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
-  connectTimeout: 10000, // 10 seconds timeout
+  connectTimeout: 10000,
   retryStrategy: (times) => Math.min(times * 50, 2000),
 });
-
-redisConnection.on('error', (err) => console.error('Redis Connection Error:', err));
 
 export const emailQueue = new Queue('email-queue', {
   connection: redisConnection as any,
