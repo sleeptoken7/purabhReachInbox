@@ -8,7 +8,7 @@ export const scheduleEmails = async (req: Request, res: Response) => {
   try {
     const { recipients, subject, body, startTime, delayBetweenEmails, hourlyLimit } = req.body;
     
-    // 1. ENSURE USER EXISTS (Fixes the 500 Error)
+    // 1. Ensure User exists to prevent Foreign Key errors
     const userId = "temp-user-id";
     await prisma.user.upsert({
       where: { id: userId },
@@ -27,7 +27,6 @@ export const scheduleEmails = async (req: Request, res: Response) => {
       const recipient = recipients[i];
       const individualDelay = (startTimestamp - Date.now()) + (i * delayBetweenEmails * 1000);
       
-      // 2. Create Job in DB
       const dbJob = await prisma.emailJob.create({
         data: {
           userId,
@@ -40,7 +39,6 @@ export const scheduleEmails = async (req: Request, res: Response) => {
         },
       });
 
-      // 3. Add to BullMQ
       await emailQueue.add(
         'send-email',
         {
@@ -62,11 +60,11 @@ export const scheduleEmails = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error("CRITICAL ERROR:", error);
     return res.status(500).json({ 
-      error: 'Backend Crash', 
-      message: error.message,
-      stack: error.stack // This will show us exactly which line failed
+      error: 'Backend Error', 
+      message: error.message 
     });
   }
+};
 
 export const getJobs = async (req: Request, res: Response) => {
   try {
