@@ -37,7 +37,15 @@ export default function Dashboard() {
   if (status === "loading") return <div className="flex items-center justify-center min-h-screen font-sans">Loading purabhReachInbox...</div>;
   if (!session) return null;
 
-  const filteredJobs = jobs.filter((job: any) => job.status === activeTab);
+  // This ensures that anything not 'SCHEDULED' shows up in the history/sent tab
+  const filteredJobs = jobs.filter((job: any) => {
+    if (activeTab === "SCHEDULED") {
+      return job.status === "SCHEDULED";
+    } else {
+      // Show both SENT and FAILED in the second tab
+      return job.status === "SENT" || job.status === "FAILED";
+    }
+  });
 
   return (
     <div className="flex min-h-screen bg-[#F4F6F8] font-sans text-[#172B4D]">
