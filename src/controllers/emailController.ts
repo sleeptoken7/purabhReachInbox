@@ -8,10 +8,8 @@ export const scheduleEmails = async (req: Request, res: Response) => {
   try {
     const { recipients, subject, body, startTime, delayBetweenEmails, hourlyLimit } = req.body;
     
-    // 1. Ensure a User exists in the new Cloud DB
-    // We use a hardcoded ID for now since we are bypassing full Auth for the API test
+    // 1. ENSURE USER EXISTS (Fixes the 500 Error)
     const userId = "temp-user-id";
-    
     await prisma.user.upsert({
       where: { id: userId },
       update: {},
@@ -29,7 +27,7 @@ export const scheduleEmails = async (req: Request, res: Response) => {
       const recipient = recipients[i];
       const individualDelay = (startTimestamp - Date.now()) + (i * delayBetweenEmails * 1000);
       
-      // 2. Create the Job in Postgres
+      // 2. Create Job in DB
       const dbJob = await prisma.emailJob.create({
         data: {
           userId,
@@ -57,25 +55,26 @@ export const scheduleEmails = async (req: Request, res: Response) => {
           jobId: dbJob.id 
         }
       );
-
       scheduledJobs.push(dbJob);
     }
 
-    res.status(201).json({ message: "Success", jobs: scheduledJobs });
-  } catch (error) {
-    // This will print the EXACT error in your Render logs
-    console.error("CRITICAL BACKEND ERROR:", error); 
-    
-    res.status(500).json({ 
+    return res.status(201).json({ message: "Success", jobs: scheduledJobs });
+  } catch (error: any) {
+    console.error("DETAILED BACKEND ERROR:", error);
+    return res.status(500).json({ 
       error: 'Failed to schedule emails', 
-      message: (error as Error).message,
-      stack: (error as Error).stack 
+      details: error.message 
     });
   }
 };
+
 export const getJobs = async (req: Request, res: Response) => {
+  try {
     const jobs = await prisma.emailJob.findMany({
-        orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' }
     });
     res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch jobs" });
+  }
 };
