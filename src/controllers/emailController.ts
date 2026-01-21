@@ -1,78 +1,63 @@
-import { Request, Response } from 'express';
+import { Worker, Job } from 'bullmq';
+import nodemailer from 'nodemailer';
+import { redisConnection } from '../queue';
 import { PrismaClient } from '@prisma/client';
-import { emailQueue } from '../queue';
+import dotenv from 'dotenv';
 
+dotenv.config();
 const prisma = new PrismaClient();
 
-export const scheduleEmails = async (req: Request, res: Response) => {
-  try {
-    const { recipients, subject, body, startTime, delayBetweenEmails, hourlyLimit } = req.body;
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+export const emailWorker = new Worker(
+  'email-queue',
+  async (job: Job) => {
+    const { jobId, recipient, subject, body, hourlyLimit } = job.data;
+    const senderEmail = process.env.SMTP_USER;
+
+    // Rate Limiting Logic using Redis Atomic Counters
+    const currentHour = new Date().toISOString().split(':')[0];
+    const rateLimitKey = `ratelimit:${senderEmail}:${currentHour}`;
+    const currentCount = await redisConnection.incr(rateLimitKey);
     
-    // 1. Ensure User exists to prevent Foreign Key errors
-    const userId = "temp-user-id";
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {},
-      create: {
-        id: userId,
-        email: "admin@purabhreachinbox.com",
-        name: "Admin User"
-      }
-    });
+    if (currentCount === 1) await redisConnection.expire(rateLimitKey, 3600);
 
-    const startTimestamp = new Date(startTime).getTime();
-    const scheduledJobs = [];
-
-    for (let i = 0; i < recipients.length; i++) {
-      const recipient = recipients[i];
-      const individualDelay = (startTimestamp - Date.now()) + (i * delayBetweenEmails * 1000);
-      
-      const dbJob = await prisma.emailJob.create({
-        data: {
-          userId,
-          recipient,
-          subject,
-          body,
-          status: 'SCHEDULED',
-          scheduledAt: new Date(startTimestamp + (i * delayBetweenEmails * 1000)),
-          senderEmail: process.env.SMTP_USER || "test@example.com",
-        },
-      });
-
-      await emailQueue.add(
-        'send-email',
-        {
-          jobId: dbJob.id,
-          recipient,
-          subject,
-          body,
-          hourlyLimit
-        },
-        { 
-          delay: Math.max(0, individualDelay),
-          jobId: dbJob.id 
-        }
-      );
-      scheduledJobs.push(dbJob);
+    if (currentCount > Number(hourlyLimit)) {
+      const nextHour = new Date();
+      nextHour.setHours(nextHour.getHours() + 1, 0, 0, 0);
+      await job.moveToDelayed(nextHour.getTime(), job.token);
+      throw new Error('Rate limit exceeded');
     }
 
-    return res.status(201).json({ message: "Success", jobs: scheduledJobs });
-  } catch (error: any) {
-    console.error("CRITICAL ERROR:", error);
-    return res.status(500).json({ 
-      error: 'Backend Error', 
-      message: error.message 
-    });
-  }
-};
+    try {
+      await transporter.sendMail({
+        from: `"purabhReachInbox" <${senderEmail}>`,
+        to: recipient,
+        subject,
+        html: body,
+      });
 
-export const getJobs = async (req: Request, res: Response) => {
-  try {
-    const jobs = await prisma.emailJob.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json(jobs);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch jobs" });
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: { status: 'SENT', sentAt: new Date() },
+      });
+    } catch (error) {
+      await prisma.emailJob.update({
+        where: { id: jobId },
+        data: { status: 'FAILED', error: (error as Error).message },
+      });
+      throw error;
+    }
+  },
+  { 
+    connection: redisConnection as any,
+    concurrency: 5 
   }
-};
+);
