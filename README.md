@@ -1,4 +1,3 @@
-# purabhReachInbox - Full-stack Email Job Scheduler
 
 # https://purabh-reachinbox.vercel.app/
 
