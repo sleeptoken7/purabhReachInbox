@@ -10,11 +10,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-  origin: "*", // This is the 'Easy Mode' for submissions to ensure it works everywhere
+  origin: "*", // This allows any frontend to talk to your backend
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
-
 // Routes
 app.use('/api/emails', emailRoutes);
 
