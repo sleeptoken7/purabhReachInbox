@@ -32,3 +32,8 @@ Record a new video. Do not just show the app. You must talk like an engineer.
 1. Show the Code: Open src/queue.ts and say: "I chose BullMQ over Cron because it provides a persistent, distributed state that survives server restarts." 
 2. Show the Rate Limiter: Open src/workers/emailWorker.ts and say: "I'm using Redis atomic counters to ensure that even with multiple workers, we never exceed the hourly limit per sender." 
 3. Show the UI: Show the new sidebar layout and say: "I've updated the UI to match the ReachInbox design system for a professional SaaS experience." 
+
+Updated Links:
+* GitHub Repository (Public): https://github.com/sleeptoken7/purabhReachInbox 
+* Hosted Dashboard: https://purabh-reachinbox.vercel.app/ 
+* New Demo Video: https://drive.google.com/file/d/1uDlIJmf05Yb8v3AkFdgsf0UJ_Teypz4h/view 
