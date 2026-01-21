@@ -4,16 +4,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// The connection string should now start with rediss:// (set in Render)
-export const redisConnection = new IORedis(process.env.REDIS_URL!, {
+// Use rediss:// for secure cloud connection
+const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+
+export const redisConnection = new IORedis(redisUrl, {
   maxRetriesPerRequest: null,
-  // This ensures the connection stays alive in the cloud
+  tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
   retryStrategy: (times) => Math.min(times * 50, 2000),
-  reconnectOnError: (err) => {
-    const targetError = 'READONLY';
-    if (err.message.includes(targetError)) return true;
-    return false;
-  },
 });
 
 export const emailQueue = new Queue('email-queue', {
@@ -22,6 +19,5 @@ export const emailQueue = new Queue('email-queue', {
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000 },
     removeOnComplete: true,
-    removeOnFail: false,
   },
 });
